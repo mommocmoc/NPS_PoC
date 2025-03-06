@@ -23,7 +23,7 @@
     <style>
       body {
         margin: 0;
-        background: #f0f0f0;
+        background: #ff0;
       }
       #game-container {
         width: 100%;
@@ -51,9 +51,15 @@
           this.load.image("yellowPlastic", "assets/yellowplastic.png");
           this.load.image("redPlastic", "assets/redplastic.png");
           this.load.image("bluePlastic", "assets/blueplastic.png");
+          // 배경음 (루프 재생)
+          this.load.audio("bgm", "assets/background.mp3");
         }
 
         create() {
+          // --- 오디오 재생 설정 ---
+          // 배경음악을 재생하고 루프로 설정
+          this.bgm = this.sound.add("bgm", { volume: 0.5, loop: true });
+          this.bgm.play();
           // 배경 설정
           this.cameras.main.setBackgroundColor("#ff0");
           // 중앙 기준 x 좌표 계산
@@ -139,9 +145,8 @@
 
           // --- 오디오 에셋 로드 구간 ---
           // 효과음 (예: 폐플라스틱 획득 시 재생)
-          // this.load.audio('effect', 'assets/effect.mp3');
-          // 배경음 (루프 재생)
-          // this.load.audio('bgm', 'assets/background.mp3');
+          this.load.audio("effect", "assets/effect.mp3");
+
           // 미션 성공 음악
           // this.load.audio('missionSuccess', 'assets/success.mp3');
         }
@@ -152,15 +157,15 @@
 
           // --- 오디오 재생 설정 ---
           // 배경음악을 재생하고 루프로 설정
-          // let bgm = this.sound.add('bgm', { volume: 0.5, loop: true });
-          // bgm.play();
+          this.bgm = this.sound.add("bgm", { volume: 0.5, loop: true });
+          this.bgm.play();
 
           // --- 바구니 생성 구간 ---
           // 실제 이미지 사용 시 아래와 같이 변경:
           this.player = this.add
             .image(
               this.cameras.main.width / 2,
-              this.cameras.main.height / 3 * 2,
+              (this.cameras.main.height / 3) * 2,
               "basket"
             )
             .setInteractive();
@@ -235,7 +240,7 @@
 
           // --- 효과음 재생 구간 ---
           // 실제 효과음 사용 시, 아래와 같이 재생:
-          // this.sound.play('effect');
+          this.sound.play("effect");
 
           if (score >= scoreTarget) {
             this.showProduct();
@@ -252,11 +257,13 @@
 
           // --- 제품 이미지 및 브랜드 로고 표시 구간 ---
           // 실제 이미지 사용 시, 아래와 같이 변경:
-          let productImage = this.add.image(
-            this.cameras.main.width / 2,
-            this.cameras.main.height / 3 - 50,
-            "product"
-          ).setOrigin(0.5);
+          let productImage = this.add
+            .image(
+              this.cameras.main.width / 2,
+              this.cameras.main.height / 2,
+              "product"
+            )
+            .setOrigin(0.5);
           //   productImage.setScale(0.5);
           // let logoImage = this.add.image(this.cameras.main.width/2, this.cameras.main.height/2 + 100, 'logo');
           // logoImage.setScale(0.5);
@@ -311,7 +318,7 @@
         scene: [MenuScene, GameScene],
         scale: {
           mode: Phaser.Scale.FIT,
-        //   autoCenter: Phaser.Scale.CENTER_BOTH,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
         },
       };
 
