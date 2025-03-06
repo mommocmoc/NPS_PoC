@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>NoPlasticSunday Mini-Game</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://cdn.imweb.me/thumbnail/20240402/e59e34c826cf8.png"
+      sizes="196x196"
+    />
+    <link
+      href="//cdn.jsdelivr.net/gh/pragcorp/NPS_font@2.0/NPSstatic.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <!-- Phaser 3 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        background: #f0f0f0;
+      }
+      #game-container {
+        width: 100%;
+        height: 100vh;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container"></div>
+    <script>
+      // 게임 전역 변수
+      let score = 0;
+      const scoreTarget = 15; // 제품으로 변신하는 기준 점수
+      // 메뉴 씬: 게임 시작 전 로고와 'Tap to Start!' 문구 표시
+      class MenuScene extends Phaser.Scene {
+        constructor() {
+          super("MenuScene");
+        }
+
+        preload() {
+          // 메뉴에 필요한 에셋 로드 (logo 등)
+          // 실제 이미지 경로로 변경하세요.
+          this.load.image("logo", "assets/logo.png");
+          this.load.image("yellowPlastic", "assets/yellowplastic.png");
+          this.load.image("redPlastic", "assets/redplastic.png");
+          this.load.image("bluePlastic", "assets/blueplastic.png");
+        }
+
+        create() {
+          // 배경 설정
+          this.cameras.main.setBackgroundColor("#ff0");
+          // 중앙 기준 x 좌표 계산
+          const centerX = this.cameras.main.width / 2;
+          // 플라스틱 이미지들을 로고 위쪽에 배치 (예: 화면 상단 20% 정도)
+          const plasticY = this.cameras.main.height / 5;
+          const spacing = 100; // 좌우 간격 (필요에 따라 조절)
+
+          // 플라스틱 이미지 3종류 추가 (좌측, 중앙, 우측)
+          const plastic1 = this.add.image(
+            centerX - spacing,
+            plasticY,
+            "bluePlastic"
+          );
+          plastic1.setScale(0.5); // 필요시 크기 조절
+          const plastic2 = this.add.image(centerX, plasticY, "yellowPlastic");
+          plastic2.setScale(0.5);
+          const plastic3 = this.add.image(
+            centerX + spacing,
+            plasticY,
+            "redPlastic"
+          );
+          plastic3.setScale(0.5);
+          // 로고 이미지 (중앙 상단 부분에 배치)
+          const logo = this.add.image(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 3 + 45,
+            "logo"
+          );
+          logo.setScale(0.5); // 필요에 따라 크기 조절
+          const gameText = this.add
+            .text(
+              this.cameras.main.width / 2,
+              this.cameras.main.height / 3 + 100,
+              "미션!\n 플라스틱 병뚜껑" + scoreTarget + "개 모으기",
+              {
+                fontFamily: "NPSstatic",
+                fontWeight: 300,
+                fontSize: "30px",
+                fill: "#000",
+                align: "center",
+              }
+            )
+            .setOrigin(0.5);
+          // Tap to Start! 텍스트 (중앙 하단 부분)
+          const startText = this.add
+            .text(
+              this.cameras.main.width / 2,
+              this.cameras.main.height * 0.7,
+              "Tap to Start!",
+              {
+                fontFamily: "NPSstatic",
+                fontSize: "30px",
+                fill: "#000",
+              }
+            )
+            .setOrigin(0.5);
+
+          // 화면을 탭하면 게임 씬으로 전환
+          this.input.once("pointerdown", () => {
+            // score 초기화
+            score = 0;
+            this.scene.start("GameScene");
+          });
+        }
+      }
+
+      class GameScene extends Phaser.Scene {
+        constructor() {
+          super("GameScene");
+        }
+
+        preload() {
+          // --- 이미지 에셋 로드 구간 ---
+          // 나중에 실제 이미지 파일 경로로 변경하세요.
+          this.load.image("basket", "assets/basket.png");
+          // 세 가지 폐플라스틱 이미지 로드 (경로는 실제 에셋 위치로 변경)
+          this.load.image("yellowPlasticObj", "assets/yellow.png");
+          this.load.image("redPlasticObj", "assets/red.png");
+          this.load.image("bluePlasticObj", "assets/blue.png");
+          this.load.image("product", "assets/product.png");
+          // this.load.image('logo', 'assets/logo.png');
+
+          // --- 오디오 에셋 로드 구간 ---
+          // 효과음 (예: 폐플라스틱 획득 시 재생)
+          // this.load.audio('effect', 'assets/effect.mp3');
+          // 배경음 (루프 재생)
+          // this.load.audio('bgm', 'assets/background.mp3');
+          // 미션 성공 음악
+          // this.load.audio('missionSuccess', 'assets/success.mp3');
+        }
+
+        create() {
+          // 배경 색상
+          this.cameras.main.setBackgroundColor("#ffff00");
+
+          // --- 오디오 재생 설정 ---
+          // 배경음악을 재생하고 루프로 설정
+          // let bgm = this.sound.add('bgm', { volume: 0.5, loop: true });
+          // bgm.play();
+
+          // --- 바구니 생성 구간 ---
+          // 실제 이미지 사용 시 아래와 같이 변경:
+          this.player = this.add
+            .image(
+              this.cameras.main.width / 2,
+              this.cameras.main.height - 30,
+              "basket"
+            )
+            .setInteractive();
+          this.player.setDisplaySize(60, 20);
+          // static body 사용 시에는 게임 오브젝트의 변화 후 수동 업데이트 필요
+          this.physics.add.existing(this.player, true); // 정적 물체
+          // 바구니에 대한 드래그 활성화
+          this.input.setDraggable(this.player);
+          this.input.on("drag", (pointer, gameObject, dragX, dragY) => {
+            // 바구니 영역 내에서만 좌우 이동하도록 x 좌표 업데이트
+            gameObject.x = Phaser.Math.Clamp(
+              dragX,
+              gameObject.width / 2,
+              this.cameras.main.width - gameObject.width / 2
+            );
+            // 정적 body는 자동 업데이트 되지 않으므로 수동 업데이트
+            gameObject.body.updateFromGameObject();
+          });
+
+          // --- 폐플라스틱 그룹 생성 구간 ---
+          this.plastics = this.physics.add.group();
+          this.physics.add.overlap(
+            this.player,
+            this.plastics,
+            this.collectPlastic,
+            null,
+            this
+          );
+
+          // 주기적으로 폐 플라스틱 생성하는 타이머 이벤트를 변수에 저장
+          this.spawnTimer = this.time.addEvent({
+            delay: 1000,
+            callback: this.spawnPlastic,
+            callbackScope: this,
+            loop: true,
+          });
+
+          // 점수 텍스트
+          this.scoreText = this.add.text(10, 10, "모은 플라스틱 병뚜껑: 0", {
+            fontFamily: "NPSstatic",
+            fontWeight: "100",
+            fontSize: "20px",
+            fill: "#000",
+          });
+        }
+
+        spawnPlastic() {
+          const x = Phaser.Math.Between(20, this.cameras.main.width - 20);
+
+          // 사용할 이미지 키 배열
+          const plasticTypes = [
+            "yellowPlasticObj",
+            "redPlasticObj",
+            "bluePlasticObj",
+          ];
+          // 배열에서 랜덤하게 하나 선택
+          const randomType =
+            plasticTypes[Phaser.Math.Between(0, plasticTypes.length - 1)];
+
+          // 선택된 이미지로 폐플라스틱 생성 (아케이드 물리 엔진 적용)
+          let plastic = this.physics.add.image(x, 0, randomType);
+          plastic.setVelocityY(Phaser.Math.Between(100, 200));
+          plastic.setCollideWorldBounds(false);
+
+          this.plastics.add(plastic);
+        }
+
+        collectPlastic(player, plastic) {
+          plastic.destroy();
+          score++;
+          this.scoreText.setText("모은 플라스틱 병뚜껑: " + score);
+
+          // --- 효과음 재생 구간 ---
+          // 실제 효과음 사용 시, 아래와 같이 재생:
+          // this.sound.play('effect');
+
+          if (score >= scoreTarget) {
+            this.showProduct();
+          }
+        }
+
+        showProduct() {
+          this.scoreText.destroy();
+          this.physics.pause();
+          this.spawnTimer.remove(false);
+          // --- 미션 성공 음악 재생 구간 ---
+          // 실제 음악 사용 시 아래와 같이 재생:
+          // this.sound.play('missionSuccess');
+
+          // --- 제품 이미지 및 브랜드 로고 표시 구간 ---
+          // 실제 이미지 사용 시, 아래와 같이 변경:
+          let productImage = this.add.image(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2 - 50,
+            "product"
+          ).setOrigin(0.5);
+          //   productImage.setScale(0.5);
+          // let logoImage = this.add.image(this.cameras.main.width/2, this.cameras.main.height/2 + 100, 'logo');
+          // logoImage.setScale(0.5);
+          this.add
+            .text(
+              this.cameras.main.width / 2,
+              this.cameras.main.height / 2,
+              "Change Starts with Small Action.\nLet's NoPlasticSunday",
+              {
+                fontFamily: "NPSstatic",
+                fontWeight: "100",
+                fontSize: "20px",
+                fill: "#000",
+                align: "center",
+              }
+            )
+            .setOrigin(0.5);
+          // 일정 시간 후 또는 탭하면 메뉴씬으로 돌아가기
+          // 탭 이벤트 등록 (한 번만 처리)
+          this.input.once("pointerdown", () => {
+            this.scene.start("MenuScene");
+          });
+
+          // 일정 시간(예: 20초) 후 자동 메뉴로 복귀
+          this.time.delayedCall(20000, () => {
+            this.scene.start("MenuScene");
+          });
+        }
+
+        update() {
+          this.plastics.getChildren().forEach((plastic) => {
+            if (plastic.y > this.cameras.main.height + 20) {
+              plastic.destroy();
+            }
+          });
+        }
+      }
+
+      // Phaser 게임 구성
+      const config = {
+        type: Phaser.AUTO,
+        parent: "game-container",
+        width: 360,
+        height: 640,
+        physics: {
+          default: "arcade",
+          arcade: {
+            gravity: { y: 16 },
+            debug: false,
+          },
+        },
+        scene: [MenuScene, GameScene],
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
+      };
+
+      const game = new Phaser.Game(config);
+    </script>
+  </body>
+</html>
